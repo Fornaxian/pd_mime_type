@@ -17,11 +17,10 @@ var types = []typeMatcher{
 	// 6 bytes
 	exact{[]byte("\x37\x7A\xBC\xAF\x27\x1C"), "application/7z-compressed"},
 
-	// 5 bytes
-
 	// 4 bytes
 	exact{[]byte("fLaC"), "audio/flac"},
 	exact{[]byte("OggS"), "application/ogg"},
+	exact{[]byte("\x1A\x45\xDF\xA3"), "video/x-matroska"},
 
 	// 3 bytes
 	exact{[]byte("\x49\x44\x33"), "audio/mp3"},
@@ -30,23 +29,24 @@ var types = []typeMatcher{
 	exact{[]byte("\xFF\xFB"), "audio/mp3"},
 }
 
-// ContentType detects the content type of a file
-func ContentType(buf []byte) (mimeType string) {
+// Detect detects the content type of a file by the first bytes of the
+// file
+func Detect(head []byte) (mimeType string) {
 	// Manual magic byte detection
 	if mimeType == "application/octet-stream" || mimeType == "" {
 		for _, v := range types {
-			if mimeType = v.match(buf); mimeType != "" {
+			if mimeType = v.match(head); mimeType != "" {
 				return mimeType
 			}
 		}
 	}
 
-	// First we try the mime type detection from the http package
-	mimeType = http.DetectContentType(buf)
+	// Try the mime type detection from the http package
+	mimeType = http.DetectContentType(head)
 
-	// If that doesn't work we check if the mime type is valid UTF-8
+	// Check if the mime type is valid UTF-8
 	if mimeType == "application/octet-stream" || mimeType == "" {
-		if utf8.Valid(buf) {
+		if utf8.Valid(head) {
 			mimeType = "text/plain; charset=utf-8"
 		}
 	}
@@ -89,4 +89,3 @@ func (e masked) match(head []byte) (contentType string) {
 	}
 	return e.typ
 }
-
